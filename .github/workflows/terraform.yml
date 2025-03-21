@@ -1,1 +1,43 @@
 
+name: Terraform Apply - OCI VCN
+
+on:
+  push:
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+
+jobs:
+  terraform:
+    name: Apply Terraform VCN
+    runs-on: ubuntu-latest
+
+    env:
+      OCI_TF_PRIVATE_KEY: ${{ secrets.OCI_TF_PRIVATE_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Write private key to file
+        run: |
+          echo "${OCI_TF_PRIVATE_KEY}" > oci_api_key.pem
+          chmod 600 oci_api_key.pem
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply with inline vars
+        run: |
+          terraform apply -auto-approve \
+            -var "tenancy_ocid=${{ secrets.OCI_TF_TENANCY_OCID }}" \
+            -var "user_ocid=${{ secrets.OCI_TF_USER_OCID }}" \
+            -var "fingerprint=${{ secrets.OCI_TF_FINGERPRINT }}" \
+            -var "private_key_path=./oci_api_key.pem" \
+            -var "region=${{ secrets.OCI_TF_REGION }}" \
+            -var "compartment_ocid=${{ secrets.OCI_TF_COMPARTMENT_OCID }}" \
+            -var "vcn_display_name=my-vcn" \
+            -var "vcn_cidr_block=10.0.0.0/16"
