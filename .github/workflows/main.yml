@@ -1,58 +1,49 @@
-name: Create OCI With Terraform
-on:
-  workflow_dispatch:
+name: Terraform Apply - OCI VCN
 
-jobs: 
-  OCI-IaC-Deployment:
+on:
+  push:
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+
+jobs:
+  terraform:
+    name: Apply Terraform VCN
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: Terraform
+
+    env:
+      OCI_TF_TENANCY_OCID: ${{ secrets.OCI_TF_TENANCY_OCID }}
+      OCI_TF_USER_OCID: ${{ secrets.OCI_TF_USER_OCID }}
+      OCI_TF_FINGERPRINT: ${{ secrets.OCI_TF_FINGERPRINT }}
+      OCI_TF_PRIVATE_KEY: ${{ secrets.OCI_TF_PRIVATE_KEY }}
+      OCI_TF_REGION: ${{ secrets.OCI_TF_REGION }}
+      OCI_TF_COMPARTMENT_OCID: ${{ secrets.OCI_TF_COMPARTMENT_OCID }}
+
     steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v2
-      
-      - name: 'Write Config & Key Files'
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Write private key to file
         run: |
-          mkdir ~/.oci
-          echo "[DEFAULT]" >> ~/.oci/config
-          echo "user=ocid1.user.oc1..aaaaaaaafaq7vh72xyy3gj47vooic6hi7a2w2tvkzplgcjlohe7aawa4n6ea" >> ~/.oci/config
-          echo "fingerprint=65:a4:ea:9a:6b:fc:60:70:10:88:35:9b:70:18:d4:f5" >> ~/.oci/config
-          echo "region=us-ashburn-1" >> ~/.oci/config
-          echo "tenancy=ocid1.tenancy.oc1..aaaaaaaaa3qmjxr43tjexx75r6gwk6vjw22ermohbw2vbxyhczksgjir7xdq" >> ~/.oci/config
-          echo "key_file=~/.oci/key.pem" >> ~/.oci/config
-          echo "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCVzg8vTf7PPJzrkrsWDq+VNm/IiRtUn1l2H/4KYyCj+6hvAaApJgCJPecAlh8MYEfoIny8z9kCH9E3ZmkWvlbZ3m8YT3vlup934rTAr4/MnPhABrkIdUrryA1qiXkYvRsmCOCSC2mXOkMyKodWoO+yOiNsl16o+wftBvWacUQxoq1fGe0QDzwhVojBFW39EpcVJ1D2vJ9tyNVczRzxmwwb0kFNOaeqn/d1qfukXmcmeDsz2ffWcE6fXBWRzcD2hG6bKoJdxDCMJC6UaUNT9zjEuvTc4IW4A99ELEYUOguj4ewFeTjc1A7g45hJfVkylPOxczFcrHHf40rW3wXNv9KHAgMBAAECggEAIvSoxWyJO1lU8oFUJ4L4xLQlpGEd4AKo8O/pKwpTeQBFntV9xmxILr4jk5b0GsKytL+rZLGJXT4IZ0l91yFGCeOl/8G4UvRXtrVPYTD2OJQeN256KbeY6mjNfKEkgTnLRnZG1L1V/8RIHsIev3+hPvDjCDlQDNU61bvMfqPUelI0SaGMMPOjVYpmY/k+6VPZAuMQEwEW6D8Rkw/k0JUx9kfn9qmYt5xL5YUWXz9b0tJ97QQXVAUnOcwVTwkMR5OEprp1Op6HdwGKhcOoYh5aAUTplJCsL1Ws57x1hEuLEyzG7+U+0Uya29roKB7Zf7pk8p7aoCb5+xZ6b7rLqukTzQKBgQDShLQpeQIxEFeX8EOsEXVVoMJy67UuFeOkHY22H3Ki/8zdcrjqseJ13ifx8wS0/It8A+yXVx8qfz1hzb4YMfJLv7laxIT3ZeGTdhJl4WUo9egXnCYNUA85/hSwTBZRJuL4HYuxRm+VXkUvsAkCRu4vKLyRlrKnBpMcLbC8sxYRLQKBgQC2K25uGQIbaQU8dWPrG8WG6hF32ekV+DM9A2S8Ayoq5RCpFwjYvX8QpgfHAsVgVaDVhuR5R4WmrvFCUt256ohfb5ukYQdo7xFJ6jcwpnYafpj2Wu5V9F3e5Sj7eXWftWeTzCLRj9K/j3ZkD/eBcHypv9nEH+kzWUSSkCZ4N1F7AwKBgDzrZAtgVi8GkKKKR7sCblbyJ3MEHLESaoayerDKVu0uYwVuTm60PVloiVytu534OxEPPabp8j3lBklINYtg4MHk4GmQ1v2UwPtgPqC24gRBbQFwEV7m3REmIqyFyCuBukqcmjEZte6ekhzjrye2iPSisDbdSiOldmrAGhXxKSCdAoGAafih6NILc76IGT+AvIgPRAht2PaerPUReXC77NM6eHGAW5zWvJ6fiCPNamumPgAR66Toy9RbXzdtiVODQF+6rSnTtK/tC5Hm0MS7DkYHdiom+Ui0VLQu1zcfvApP7nQsqMGbj6TGyEDAcj0HkfjJzEWafIjDs+c+CLRqbIxhjdkCgYA6aXyF9kFUnI/Hct2+HqdndEgzFRdWCi2IzVgx5wbu7SbDBnccHiUPR/RDR1SiWqu4Z8fmTSMTdJOgwwlf23P7oL0kW0QsNwoNmOn67LAWr6etyeh2gxs7I/LxvQObsw33OQ04gxP/hpK4UHgleJgh5o7RdFwdkPZr1OyvBLup6Q==" >> ~/.oci/key.pem
-      
-      - name: 'Install OCI CLI'
+          echo "${OCI_TF_PRIVATE_KEY}" > oci_api_key.pem
+          chmod 600 oci_api_key.pem
+
+      - name: Create terraform.tfvars
         run: |
-          curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
-          chmod +x install.sh
-          ./install.sh --accept-all-defaults
-          echo "/home/runner/bin" >> $GITHUB_PATH
-          exec -l $SHELL
-      
-      - name: 'Fix OCI Config File Permissions'
-        run: |
-          oci setup repair-file-permissions --file /home/runner/.oci/config
-          oci setup repair-file-permissions --file /home/runner/.oci/key.pem
+          cat <<EOF > terraform.tfvars
+          tenancy_ocid     = "${OCI_TF_TENANCY_OCID}"
+          user_ocid        = "${OCI_TF_USER_OCID}"
+          fingerprint      = "${OCI_TF_FINGERPRINT}"
+          private_key_path = "./oci_api_key.pem"
+          region           = "${OCI_TF_REGION}"
+          compartment_ocid = "${OCI_TF_COMPARTMENT_OCID}"
+          EOF
 
       - name: Terraform Init
-        id: init
         run: terraform init
-        
-      - name: Terraform Validate
-        id: validate
-        run: terraform validate
-  
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan
-        continue-on-error: true
-  
-      - name: Terraform Plan Status
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
